@@ -2,6 +2,11 @@
 
 This Mod introduces modifications that seek to make multiplayer games more balanced, especially those with 3+ players.
 
+Current modifications:
+
+- **Team Death:** If one member of the team dies, the entire team loses (inspired by the STS board game).
+- **Multiplayer Card Nerfs:** Nerfs team damage-increasing cards (Flanking, Knockdown) by making them only last for one attack.
+
 ## Setup
 
 This project was set up following the instructions here: https://github.com/Alchyr/ModTemplate-StS2/wiki/Setup.
