@@ -1,0 +1,11 @@
+{
+  "id": "STS2MultiplayerBalancer",
+  "name": "STS2MultiplayerBalancer",
+  "author": "James Soh",
+  "description": "Makes multiplayer more balanced, especially for 3+ player games.",
+  "version": "v0.1.0",
+  "has_pck": false,
+  "has_dll": true,
+  "dependencies": [],
+  "affects_gameplay": true
+}
