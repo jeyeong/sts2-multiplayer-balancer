@@ -6,7 +6,7 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.ValueProps;
 
-namespace STS2MultiplayerBalancer.STS2MultiplayerBalancerCode.Patches.CardNerfs;
+namespace STS2MultiplayerBalancer.STS2MultiplayerBalancerCode.Patches.Cards;
 
 /// <summary>
 /// Tames <see cref="KnockdownPower"/> (applied by the Colorless Knockdown), which is
