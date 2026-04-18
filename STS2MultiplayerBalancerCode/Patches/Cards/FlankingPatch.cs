@@ -2,6 +2,7 @@ using HarmonyLib;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.ValueProps;
@@ -89,5 +90,51 @@ public static class FlankingPowerAfterDamageReceivedPatch
     {
         await original;
         await PowerCmd.Remove(power);
+    }
+}
+
+/// <summary>
+/// Reflects the gameplay nerf in the displayed text for the Flanking card and the
+/// <see cref="FlankingPower"/> debuff. The vanilla strings say the multiplier lasts
+/// "this turn"; once we limit the payoff to a single hit, that wording is misleading,
+/// so we rewrite it to "on the next attack".
+///
+/// We intercept at <see cref="LocTable.GetRawText"/>, which is the single chokepoint
+/// that <c>LocString.GetRawText</c> / <c>LocManager.SmartFormat</c> route through for
+/// both card and power lookups. Filtering by exact key name keeps the override scoped
+/// (the keys are unique across tables) and lets SmartFormat continue to splice in
+/// dynamic vars like <c>{Amount}</c> from the original template.
+///
+/// English-only by design: the substring swap silently no-ops in other languages,
+/// which is acceptable here since the rest of the mod is also English-only.
+/// </summary>
+[HarmonyPatch(typeof(LocTable), nameof(LocTable.GetRawText))]
+public static class FlankingTextOverridePatch
+{
+    private static readonly HashSet<string> TargetKeys = new()
+    {
+        "FLANKING.description",
+        "FLANKING_POWER.description",
+        "FLANKING_POWER.smartDescription",
+        "FLANKING_POWER.remoteDescription",
+    };
+
+    private const string OriginalPhrase = "this turn";
+    private const string ReplacementPhrase = "on the next attack";
+
+    [HarmonyPostfix]
+    public static void Postfix(string key, ref string __result)
+    {
+        if (!TargetKeys.Contains(key))
+        {
+            return;
+        }
+
+        if (string.IsNullOrEmpty(__result))
+        {
+            return;
+        }
+
+        __result = __result.Replace(OriginalPhrase, ReplacementPhrase);
     }
 }
