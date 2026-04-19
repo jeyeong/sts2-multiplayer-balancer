@@ -159,6 +159,11 @@ public static class EncounterGenerateMonstersWithSlotsPatch
     [HarmonyPostfix]
     public static void Postfix(EncounterModel __instance)
     {
+        if (!BalancerConfig.EnemyDoublingEnabled)
+        {
+            return;
+        }
+
         if (!EnemyDoublingHelpers.ShouldDouble(__instance))
         {
             return;
