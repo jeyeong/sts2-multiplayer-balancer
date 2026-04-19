@@ -2,25 +2,34 @@ using System.Linq;
 using System.Reflection;
 using Godot;
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.MonsterMoves.Intents;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
 using MegaCrit.Sts2.Core.Rooms;
+using MegaCrit.Sts2.Core.ValueProps;
 
 namespace STS2MultiplayerBalancer.STS2MultiplayerBalancerCode.Patches.Enemies;
 
 /// <summary>
-/// Doubles the enemy roster for every non-boss combat. The original generation logic
-/// (each <see cref="EncounterModel"/> subclass's <c>GenerateMonsters</c>) is left
-/// untouched; we just append a freshly-cloned mutable copy of every monster after
+/// Doubles the enemy roster for every non-boss combat and, to keep the combat
+/// math fair, halves every monster's outgoing damage in the same encounters.
+/// The original generation logic (each <see cref="EncounterModel"/> subclass's
+/// <c>GenerateMonsters</c>) is left untouched; we just append a freshly-cloned
+/// mutable copy of every monster after
 /// <see cref="EncounterModel.GenerateMonstersWithSlots"/> has finished populating
 /// the encounter's monster list.
 ///
-/// Boss rooms (<see cref="RoomType.Boss"/>) are skipped intentionally: doubling a
-/// boss would invalidate scripted encounters and break victory conditions for the
-/// act. Everything else - normal monsters, elites, and combat events whose
-/// underlying <see cref="EncounterModel"/> reports a non-boss <c>RoomType</c> - is
-/// in scope.
+/// Boss rooms (<see cref="RoomType.Boss"/>) are skipped intentionally for both
+/// halves of the patch: doubling a boss would invalidate scripted encounters and
+/// break victory conditions for the act, and conversely we don't want to nerf
+/// boss damage when we haven't given the player extra targets. Everything else -
+/// normal monsters, elites, and combat events whose underlying
+/// <see cref="EncounterModel"/> reports a non-boss <c>RoomType</c> - is in scope.
 ///
 /// Slot assignment for the duplicates mirrors the slot of the source monster so we
 /// never reference a slot the encounter scene doesn't define (which would NRE in
@@ -30,6 +39,45 @@ namespace STS2MultiplayerBalancer.STS2MultiplayerBalancerCode.Patches.Enemies;
 /// </summary>
 internal static class EnemyDoublingHelpers
 {
+    /// <summary>
+    /// Symmetric counterpart to the doubling: with twice the monsters in the
+    /// room, we want each one to hit for half as hard. Rounding up keeps tiny
+    /// (1-damage) attacks from disappearing entirely after the halving and also
+    /// preserves the multi-hit feel of moves like the Looter triple-strike.
+    /// </summary>
+    internal static decimal HalveOutgoingDamage(decimal amount)
+    {
+        if (amount <= 0m)
+        {
+            return amount;
+        }
+
+        return Math.Ceiling(amount / 2m);
+    }
+
+    /// <summary>
+    /// True when the dealer is a monster fighting in an encounter we also
+    /// doubled. We deliberately mirror <see cref="ShouldDouble"/>'s gate so the
+    /// two halves of the patch can never disagree about which fights to touch.
+    /// Damage with no dealer (e.g. environment / scripted hits) and damage from
+    /// player-side creatures is left alone.
+    /// </summary>
+    internal static bool ShouldHalveDamageFrom(Creature? dealer)
+    {
+        if (dealer?.Monster == null)
+        {
+            return false;
+        }
+
+        EncounterModel? encounter = dealer.CombatState?.Encounter;
+        if (encounter == null)
+        {
+            return false;
+        }
+
+        return ShouldDouble(encounter);
+    }
+
     /// <summary>
     /// Backing field on <see cref="EncounterModel"/> that stores the generated
     /// monster list. The class only exposes a getter for the public property, so
@@ -193,5 +241,86 @@ public static class EncounterPositionCreaturesWithSlotsPatch
     {
         float width = creature.Visuals?.Bounds?.Size.X ?? 0f;
         return width > 1f ? width : 200f;
+    }
+}
+
+/// <summary>
+/// Halves the actual damage dealt by every monster attack in a doubled
+/// encounter. We hook the deepest <see cref="CreatureCmd.Damage"/> overload -
+/// every other <c>Damage</c> entry point funnels into it - so the patch covers
+/// melee attacks, ranged attacks, and any homemade damage paths an encounter
+/// might add, with a single touch point.
+///
+/// Halving the input <c>amount</c> (rather than e.g. post-block) means damage
+/// modifiers chained onto <c>Hook.ModifyDamage</c> downstream (Vulnerable,
+/// player-side defensive powers, etc.) still scale relative to the new base, so
+/// the relationship between "raw monster swing" and "after debuffs" stays the
+/// same as vanilla, just at half the magnitude.
+/// </summary>
+[HarmonyPatch(typeof(CreatureCmd), nameof(CreatureCmd.Damage),
+    typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal),
+    typeof(ValueProp), typeof(Creature), typeof(CardModel))]
+public static class CreatureCmdDamageHalvingPatch
+{
+    [HarmonyPrefix]
+    public static void Prefix(ref decimal amount, Creature? dealer)
+    {
+        if (!EnemyDoublingHelpers.ShouldHalveDamageFrom(dealer))
+        {
+            return;
+        }
+
+        amount = EnemyDoublingHelpers.HalveOutgoingDamage(amount);
+    }
+}
+
+/// <summary>
+/// Keeps the damage shown on enemy intents in sync with the halved hits they
+/// actually land. <see cref="AttackIntent.GetTotalDamage"/> drives the intent
+/// icon/animation tier (the "small/medium/large/huge attack" art swap) and
+/// <see cref="AttackIntent.GetSingleDamage"/> drives the number rendered in the
+/// intent tooltip, so we postfix both. The actual damage path uses the move's
+/// own raw value (see <see cref="CreatureCmdDamageHalvingPatch"/>); without
+/// these display patches, intents would overstate incoming damage by 2x.
+///
+/// Owner-side filtering reuses <see cref="EnemyDoublingHelpers.ShouldHalveDamageFrom"/>
+/// so a monster that somehow exists outside a doubled encounter (test scenes,
+/// future boss exemptions, etc.) keeps showing its true damage.
+/// </summary>
+[HarmonyPatch(typeof(AttackIntent))]
+public static class AttackIntentDisplayHalvingPatch
+{
+    [HarmonyPostfix]
+    [HarmonyPatch(nameof(AttackIntent.GetSingleDamage))]
+    public static void GetSingleDamagePostfix(Creature owner, ref int __result)
+    {
+        if (__result <= 0)
+        {
+            return;
+        }
+
+        if (!EnemyDoublingHelpers.ShouldHalveDamageFrom(owner))
+        {
+            return;
+        }
+
+        __result = (int)EnemyDoublingHelpers.HalveOutgoingDamage(__result);
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(nameof(AttackIntent.GetTotalDamage))]
+    public static void GetTotalDamagePostfix(Creature owner, ref int __result)
+    {
+        if (__result <= 0)
+        {
+            return;
+        }
+
+        if (!EnemyDoublingHelpers.ShouldHalveDamageFrom(owner))
+        {
+            return;
+        }
+
+        __result = (int)EnemyDoublingHelpers.HalveOutgoingDamage(__result);
     }
 }
