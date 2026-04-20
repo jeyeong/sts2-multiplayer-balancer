@@ -43,6 +43,11 @@ public static class RunStateIsGameOverPatch
     [HarmonyPrefix]
     public static bool Prefix(RunState __instance, ref bool __result)
     {
+        if (!BalancerConfig.TeamDeathEnabled)
+        {
+            return true;
+        }
+
         if (TeamDeathHelpers.TeamShouldBeConsideredDead(__instance))
         {
             __result = true;
@@ -105,6 +110,11 @@ public static class CreatureCmdKillPredicatePatch
     [HarmonyPrefix]
     public static bool Prefix(Player p, ref bool __result)
     {
+        if (!BalancerConfig.TeamDeathEnabled)
+        {
+            return true;
+        }
+
         if (TeamDeathHelpers.TeamShouldBeConsideredDead(p.RunState))
         {
             __result = true;

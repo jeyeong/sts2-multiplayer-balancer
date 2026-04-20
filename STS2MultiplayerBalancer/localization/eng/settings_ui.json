@@ -1,0 +1,10 @@
+{
+    "STS2MULTIPLAYERBALANCER-TEAM_DEATH_ENABLED.title": "Team Death",
+    "STS2MULTIPLAYERBALANCER-TEAM_DEATH_ENABLED.hover.desc": "If one hero dies, the whole team loses the run. Singleplayer behaves as vanilla.",
+    "STS2MULTIPLAYERBALANCER-FLANKING_NERF_ENABLED.title": "Nerf Flanking",
+    "STS2MULTIPLAYERBALANCER-FLANKING_NERF_ENABLED.hover.desc": "Flanking's multiplier is consumed after a single qualifying hit instead of lasting the whole turn.",
+    "STS2MULTIPLAYERBALANCER-KNOCKDOWN_NERF_ENABLED.title": "Nerf Knockdown",
+    "STS2MULTIPLAYERBALANCER-KNOCKDOWN_NERF_ENABLED.hover.desc": "Knockdown's multiplier is consumed after a single qualifying hit instead of lasting the whole turn.",
+    "STS2MULTIPLAYERBALANCER-ENEMY_DOUBLING_ENABLED.title": "Double Enemies",
+    "STS2MULTIPLAYERBALANCER-ENEMY_DOUBLING_ENABLED.hover.desc": "Doubles the enemy count in every non-boss encounter. Bosses are left unchanged."
+}
