@@ -61,10 +61,24 @@ internal static class EnemyDoublingHelpers
     /// two halves of the patch can never disagree about which fights to touch.
     /// Damage with no dealer (e.g. environment / scripted hits) and damage from
     /// player-side creatures is left alone.
+    ///
+    /// Player-side summons (Osty, Byrdpip, Pael's Legion, ...) are <see cref="MonsterModel"/>
+    /// instances too, so <c>dealer.Monster != null</c> is not enough to separate
+    /// them from hostile monsters. The engine tags every summon with a non-null
+    /// <see cref="Creature.PetOwner"/> (surfaced via <see cref="Creature.IsPet"/>),
+    /// and those creatures are spawned by card/relic effects rather than by the
+    /// encounter's monster list, so our doubling never touches them. Excluding
+    /// pets here keeps their damage at full strength without affecting any
+    /// hostile monster.
     /// </summary>
     internal static bool ShouldHalveDamageFrom(Creature? dealer)
     {
         if (dealer?.Monster == null)
+        {
+            return false;
+        }
+
+        if (dealer.IsPet)
         {
             return false;
         }
