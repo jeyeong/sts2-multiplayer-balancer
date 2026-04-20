@@ -82,11 +82,6 @@ public static class FlankingPowerAfterDamageReceivedPatch
             return;
         }
 
-        if (!BalancerConfig.FlankingNerfEnabled)
-        {
-            return;
-        }
-
         if (!FlankingNerfHelpers.ShouldConsume(power, target, props, dealer))
         {
             return;
@@ -135,11 +130,6 @@ public static class FlankingTextOverridePatch
     public static void Postfix(string key, ref string __result)
     {
         if (!TargetKeys.Contains(key))
-        {
-            return;
-        }
-
-        if (!BalancerConfig.FlankingNerfEnabled)
         {
             return;
         }

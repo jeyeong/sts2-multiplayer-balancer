@@ -78,11 +78,6 @@ public static class KnockdownPowerAfterDamageReceivedPatch
             return;
         }
 
-        if (!BalancerConfig.KnockdownNerfEnabled)
-        {
-            return;
-        }
-
         if (!KnockdownNerfHelpers.ShouldConsume(power, target, props, dealer))
         {
             return;
@@ -131,11 +126,6 @@ public static class KnockdownTextOverridePatch
     public static void Postfix(string key, ref string __result)
     {
         if (!TargetKeys.Contains(key))
-        {
-            return;
-        }
-
-        if (!BalancerConfig.KnockdownNerfEnabled)
         {
             return;
         }

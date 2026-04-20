@@ -104,7 +104,7 @@ internal static class EnemyDoublingHelpers
 
     internal static bool ShouldDouble(EncounterModel encounter)
     {
-        return BalancerConfig.EnemyDoublingEnabled && encounter.RoomType != RoomType.Boss;
+        return encounter.RoomType != RoomType.Boss;
     }
 
     internal static void DoubleMonsters(EncounterModel encounter)
