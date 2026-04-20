@@ -276,40 +276,36 @@ public static class CreatureCmdDamageHalvingPatch
 
 /// <summary>
 /// Keeps the damage shown on enemy intents in sync with the halved hits they
-/// actually land. <see cref="AttackIntent.GetTotalDamage"/> drives the intent
-/// icon/animation tier (the "small/medium/large/huge attack" art swap) and
-/// <see cref="AttackIntent.GetSingleDamage"/> drives the number rendered in the
-/// intent tooltip, so we postfix both. The actual damage path uses the move's
-/// own raw value (see <see cref="CreatureCmdDamageHalvingPatch"/>); without
-/// these display patches, intents would overstate incoming damage by 2x.
+/// actually land. We only need to postfix <see cref="AttackIntent.GetSingleDamage"/>:
+/// both shipped attack intents (<see cref="SingleAttackIntent"/>,
+/// <see cref="MultiAttackIntent"/>) compute <c>GetTotalDamage</c> by delegating
+/// to <c>GetSingleDamage</c>, so halving the single damage automatically feeds
+/// into the tier/art swap (the "small/medium/large/huge attack" icon, driven by
+/// <see cref="AttackIntent.GetTotalDamage"/> via
+/// <see cref="AttackIntent.GetTexture"/>) as well as the tooltip number. The
+/// actual damage path is halved separately in
+/// <see cref="CreatureCmdDamageHalvingPatch"/>.
+///
+/// We intentionally do NOT patch <c>GetTotalDamage</c> directly:
+/// <list type="bullet">
+///   <item><description>As of STS2 v0.103.2 it is <c>abstract</c> on
+///     <see cref="AttackIntent"/>, and Harmony refuses to patch abstract methods
+///     ("Abstract methods cannot be prepared"), which previously crashed the
+///     entire <c>PatchAll</c> and wiped out every other patch in this mod.</description></item>
+///   <item><description>Even if we walked every concrete override, patching those
+///     would double-halve damage for the shipped intents (the override already
+///     sees the halved <c>GetSingleDamage</c>), quartering the displayed value.</description></item>
+/// </list>
 ///
 /// Owner-side filtering reuses <see cref="EnemyDoublingHelpers.ShouldHalveDamageFrom"/>
 /// so a monster that somehow exists outside a doubled encounter (test scenes,
 /// future boss exemptions, etc.) keeps showing its true damage.
 /// </summary>
-[HarmonyPatch(typeof(AttackIntent))]
+[HarmonyPatch(typeof(AttackIntent), nameof(AttackIntent.GetSingleDamage))]
 public static class AttackIntentDisplayHalvingPatch
 {
     [HarmonyPostfix]
-    [HarmonyPatch(nameof(AttackIntent.GetSingleDamage))]
-    public static void GetSingleDamagePostfix(Creature owner, ref int __result)
-    {
-        if (__result <= 0)
-        {
-            return;
-        }
-
-        if (!EnemyDoublingHelpers.ShouldHalveDamageFrom(owner))
-        {
-            return;
-        }
-
-        __result = (int)EnemyDoublingHelpers.HalveOutgoingDamage(__result);
-    }
-
-    [HarmonyPostfix]
-    [HarmonyPatch(nameof(AttackIntent.GetTotalDamage))]
-    public static void GetTotalDamagePostfix(Creature owner, ref int __result)
+    public static void Postfix(Creature owner, ref int __result)
     {
         if (__result <= 0)
         {

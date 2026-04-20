@@ -24,11 +24,15 @@ namespace STS2MultiplayerBalancer.STS2MultiplayerBalancerCode.Patches.Cards;
 internal static class FlankingNerfHelpers
 {
     /// <summary>
-    /// Same gating predicate as <see cref="FlankingPower"/>'s own
-    /// <c>ModifyDamageMultiplicative</c>: the hit must be on the power's owner, must be
-    /// a powered attack, and must come from someone other than the player who applied
-    /// the debuff. Anything else leaves the power in place so it can still pay off on a
-    /// "real" qualifying hit.
+    /// Mirrors <see cref="FlankingPower"/>'s own <c>ModifyDamageMultiplicative</c>
+    /// gating exactly: the hit must be on the power's owner, must be a powered
+    /// attack, and must not come from the player who applied the debuff. A null
+    /// dealer is intentionally allowed through, matching the game code - since
+    /// <c>Applier</c> is always set at apply time, a null dealer can't equal it
+    /// and therefore still triggers the multiplier; we want to consume the power
+    /// in lockstep so the "single payoff" contract holds even on those hits.
+    /// Anything that fails these checks leaves the power in place so it can
+    /// still pay off on a "real" qualifying hit.
     /// </summary>
     internal static bool ShouldConsume(PowerModel power, Creature target, ValueProp props, Creature? dealer)
     {
@@ -42,7 +46,7 @@ internal static class FlankingNerfHelpers
             return false;
         }
 
-        if (dealer == null || dealer == power.Applier)
+        if (dealer == power.Applier)
         {
             return false;
         }
