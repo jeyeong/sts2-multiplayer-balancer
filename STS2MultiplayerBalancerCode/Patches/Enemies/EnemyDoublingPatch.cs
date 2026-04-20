@@ -90,7 +90,7 @@ internal static class EnemyDoublingHelpers
 
     internal static bool ShouldDouble(EncounterModel encounter)
     {
-        return encounter.RoomType != RoomType.Boss;
+        return BalancerConfig.EnemyDoublingEnabled && encounter.RoomType != RoomType.Boss;
     }
 
     internal static void DoubleMonsters(EncounterModel encounter)
@@ -159,11 +159,6 @@ public static class EncounterGenerateMonstersWithSlotsPatch
     [HarmonyPostfix]
     public static void Postfix(EncounterModel __instance)
     {
-        if (!BalancerConfig.EnemyDoublingEnabled)
-        {
-            return;
-        }
-
         if (!EnemyDoublingHelpers.ShouldDouble(__instance))
         {
             return;
