@@ -61,30 +61,49 @@ public static class DebilitateVulnerableApplierOnlyPatch
 /// Second half of the Debilitate nerf - see <see cref="DebilitateVulnerableApplierOnlyPatch"/>
 /// for the full write-up. This one gates the Weak amplification to attacks the debuffed
 /// owner makes against the applier; swings at any other target see vanilla Weak only.
+///
+/// Unlike the Vulnerable side, we can't patch <see cref="DebilitatePower.ModifyWeakMultiplier"/>
+/// directly: <see cref="WeakPower.ModifyDamageMultiplicative"/> calls it as
+/// <c>power.ModifyWeakMultiplier(dealer, num, props, dealer, cardSource)</c>, so the hook's
+/// <c>target</c> parameter is actually the Debilitate owner (the dealer), and the real swing
+/// target never reaches the power. We patch <see cref="WeakPower.ModifyDamageMultiplicative"/>
+/// instead, where the real target is still in scope, and reverse Debilitate's
+/// <c>num -&gt; 2·num - 1</c> boost whenever the swing isn't aimed at the applier.
 /// </summary>
-[HarmonyPatch(typeof(DebilitatePower), nameof(DebilitatePower.ModifyWeakMultiplier))]
+[HarmonyPatch(typeof(WeakPower), nameof(WeakPower.ModifyDamageMultiplicative))]
 public static class DebilitateWeakApplierOnlyPatch
 {
     [HarmonyPostfix]
     public static void Postfix(
-        DebilitatePower __instance,
-        Creature target,
-        decimal amount,
+        WeakPower __instance,
+        Creature? target,
         ValueProp props,
         Creature? dealer,
-        CardModel? cardSource,
         ref decimal __result)
     {
-        if (__result == amount)
+        if (dealer == null || dealer != __instance.Owner)
         {
             return;
         }
 
-        if (target == __instance.Applier)
+        if (!props.IsPoweredAttack())
         {
             return;
         }
 
-        __result = amount;
+        DebilitatePower? debilitate = dealer.GetPower<DebilitatePower>();
+        if (debilitate == null)
+        {
+            return;
+        }
+
+        if (target == debilitate.Applier)
+        {
+            return;
+        }
+
+        // Reverse Debilitate's `num -> num - (1 - num)` (i.e. `2·num - 1`) boost so only the
+        // vanilla Weak multiplier remains on swings aimed at anyone other than the applier.
+        __result = (__result + 1m) / 2m;
     }
 }
