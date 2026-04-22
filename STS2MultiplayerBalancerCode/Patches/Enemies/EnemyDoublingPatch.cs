@@ -31,7 +31,10 @@ namespace STS2MultiplayerBalancer.STS2MultiplayerBalancerCode.Patches.Enemies;
 /// break victory conditions for the act, and conversely we don't want to nerf
 /// boss damage or HP when we haven't given the player extra targets. Everything
 /// else - normal monsters, elites, and combat events whose underlying
-/// <see cref="EncounterModel"/> reports a non-boss <c>RoomType</c> - is in scope.
+/// <see cref="EncounterModel"/> reports a non-boss <c>RoomType</c> - is in scope
+/// by default; elite rooms can additionally be opted out of via
+/// <see cref="Config.BalancerSettings.EnemyDoublingDoubleElitesEnabled"/> so
+/// players can keep doubled normals without the doubled elite pairings.
 ///
 /// Slot assignment for the duplicates mirrors the slot of the source monster so we
 /// never reference a slot the encounter scene doesn't define (which would NRE in
@@ -139,7 +142,21 @@ internal static class EnemyDoublingHelpers
             return false;
         }
 
-        return encounter.RoomType != RoomType.Boss;
+        if (encounter.RoomType == RoomType.Boss)
+        {
+            return false;
+        }
+
+        // Elite rooms are optionally excluded so players can keep the doubled
+        // normals without the tougher elite pairings. Gated on the sub-toggle
+        // so the common case (both toggles on) still doubles elites too.
+        if (encounter.RoomType == RoomType.Elite &&
+            !BalancerSettings.EnemyDoublingDoubleElitesEnabled)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     internal static void DoubleMonsters(EncounterModel encounter)

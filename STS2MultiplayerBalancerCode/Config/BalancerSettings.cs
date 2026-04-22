@@ -26,6 +26,8 @@ internal static class BalancerSettings
 
     private const string EnemyDoublingKey = "enemy_doubling";
 
+    private const string EnemyDoublingDoubleElitesKey = "enemy_doubling_double_elites";
+
     private const string TeamDeathKey = "team_death";
 
     /// <summary>
@@ -40,6 +42,15 @@ internal static class BalancerSettings
     /// damage, trimmed HP, visual spread).
     /// </summary>
     public static bool EnemyDoublingEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Sub-option of <see cref="EnemyDoublingEnabled"/>: when false, elite
+    /// rooms are excluded from the doubling/halving/HP-trimming patches even
+    /// though <see cref="EnemyDoublingEnabled"/> is still on. Defaults to
+    /// true so enabling enemy doubling without changing anything else matches
+    /// the prior behaviour (elites were doubled too).
+    /// </summary>
+    public static bool EnemyDoublingDoubleElitesEnabled { get; set; } = true;
 
     /// <summary>
     /// Gates the "any teammate dead ⇒ whole run ends" override.
@@ -94,6 +105,7 @@ internal static class BalancerSettings
             writer.WriteLine($"[{FeaturesSection}]");
             writer.WriteLine($"{CardModsKey}={BoolToString(CardModsEnabled)}");
             writer.WriteLine($"{EnemyDoublingKey}={BoolToString(EnemyDoublingEnabled)}");
+            writer.WriteLine($"{EnemyDoublingDoubleElitesKey}={BoolToString(EnemyDoublingDoubleElitesEnabled)}");
             writer.WriteLine($"{TeamDeathKey}={BoolToString(TeamDeathEnabled)}");
         }
         catch (Exception ex)
@@ -140,6 +152,9 @@ internal static class BalancerSettings
                     break;
                 case EnemyDoublingKey:
                     EnemyDoublingEnabled = ParseBool(value, EnemyDoublingEnabled);
+                    break;
+                case EnemyDoublingDoubleElitesKey:
+                    EnemyDoublingDoubleElitesEnabled = ParseBool(value, EnemyDoublingDoubleElitesEnabled);
                     break;
                 case TeamDeathKey:
                     TeamDeathEnabled = ParseBool(value, TeamDeathEnabled);

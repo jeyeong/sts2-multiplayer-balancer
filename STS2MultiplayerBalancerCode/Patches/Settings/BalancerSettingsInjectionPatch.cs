@@ -40,6 +40,7 @@ internal enum ModToggleKind
 {
     CardMods,
     EnemyDoubling,
+    EnemyDoublingDoubleElites,
     TeamDeath,
 }
 
@@ -85,6 +86,7 @@ internal static class ModSettingsInjectionHelpers
         {
             ModToggleKind.CardMods => BalancerSettings.CardModsEnabled,
             ModToggleKind.EnemyDoubling => BalancerSettings.EnemyDoublingEnabled,
+            ModToggleKind.EnemyDoublingDoubleElites => BalancerSettings.EnemyDoublingDoubleElitesEnabled,
             ModToggleKind.TeamDeath => BalancerSettings.TeamDeathEnabled,
             _ => true,
         };
@@ -99,6 +101,9 @@ internal static class ModSettingsInjectionHelpers
                 break;
             case ModToggleKind.EnemyDoubling:
                 BalancerSettings.EnemyDoublingEnabled = enabled;
+                break;
+            case ModToggleKind.EnemyDoublingDoubleElites:
+                BalancerSettings.EnemyDoublingDoubleElitesEnabled = enabled;
                 break;
             case ModToggleKind.TeamDeath:
                 BalancerSettings.TeamDeathEnabled = enabled;
@@ -235,6 +240,12 @@ internal static class ModSettingsInjector
             ModToggleKind.CardMods, nextIndex);
         nextIndex = AddToggleRow(vbox, templateLabel, "Sts2MultiplayerBalancerEnemyDoubling",
             "Enemy Doubling (experimental)", ModToggleKind.EnemyDoubling, nextIndex);
+        // Rendered as a visual sub-option under Enemy Doubling: extra left
+        // indent + a leading arrow so it reads as a child of the toggle above
+        // without needing any new container widgets.
+        nextIndex = AddToggleRow(vbox, templateLabel, "Sts2MultiplayerBalancerEnemyDoublingDoubleElites",
+            "    \u21b3 Double Elites", ModToggleKind.EnemyDoublingDoubleElites, nextIndex,
+            extraLeftMargin: 32);
         _ = AddToggleRow(vbox, templateLabel, "Sts2MultiplayerBalancerTeamDeath", "Team Death",
             ModToggleKind.TeamDeath, nextIndex);
 
@@ -252,14 +263,15 @@ internal static class ModSettingsInjector
         string rowName,
         string labelText,
         ModToggleKind kind,
-        int insertIndex)
+        int insertIndex,
+        int extraLeftMargin = 0)
     {
         MarginContainer row = new()
         {
             Name = rowName,
             CustomMinimumSize = new Vector2(0, 64),
         };
-        row.AddThemeConstantOverride("margin_left", 12);
+        row.AddThemeConstantOverride("margin_left", 12 + extraLeftMargin);
         row.AddThemeConstantOverride("margin_top", 0);
         row.AddThemeConstantOverride("margin_right", 12);
         row.AddThemeConstantOverride("margin_bottom", 0);
