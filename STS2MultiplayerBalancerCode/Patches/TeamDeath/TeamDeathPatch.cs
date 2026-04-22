@@ -3,6 +3,7 @@ using System.Reflection;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Runs;
+using STS2MultiplayerBalancer.STS2MultiplayerBalancerCode.Config;
 
 namespace STS2MultiplayerBalancer.STS2MultiplayerBalancerCode.Patches.TeamDeath;
 
@@ -22,6 +23,14 @@ internal static class TeamDeathHelpers
 {
     internal static bool TeamShouldBeConsideredDead(IRunState? runState)
     {
+        // Single gate for both `RunState.IsGameOver` and the `CreatureCmd.Kill`
+        // predicate patch below; flipping the user toggle off restores vanilla
+        // team-death behaviour (everyone has to die).
+        if (!BalancerSettings.TeamDeathEnabled)
+        {
+            return false;
+        }
+
         if (runState == null)
         {
             return false;

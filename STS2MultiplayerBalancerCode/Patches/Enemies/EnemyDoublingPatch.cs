@@ -13,6 +13,7 @@ using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.ValueProps;
+using STS2MultiplayerBalancer.STS2MultiplayerBalancerCode.Config;
 
 namespace STS2MultiplayerBalancer.STS2MultiplayerBalancerCode.Patches.Enemies;
 
@@ -129,6 +130,15 @@ internal static class EnemyDoublingHelpers
 
     internal static bool ShouldDouble(EncounterModel encounter)
     {
+        // Also acts as the on/off gate for every sibling patch in this file:
+        // each of them early-outs whenever ShouldDouble does, so flipping the
+        // user toggle off here disables doubling, damage halving, HP trimming
+        // and the duplicate-spread placement in a single place.
+        if (!BalancerSettings.EnemyDoublingEnabled)
+        {
+            return false;
+        }
+
         return encounter.RoomType != RoomType.Boss;
     }
 

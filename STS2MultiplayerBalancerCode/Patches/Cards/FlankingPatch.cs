@@ -6,6 +6,7 @@ using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.ValueProps;
+using STS2MultiplayerBalancer.STS2MultiplayerBalancerCode.Config;
 
 namespace STS2MultiplayerBalancer.STS2MultiplayerBalancerCode.Patches.Cards;
 
@@ -77,6 +78,11 @@ public static class FlankingPowerAfterDamageReceivedPatch
         ValueProp props,
         Creature? dealer)
     {
+        if (!BalancerSettings.CardModsEnabled)
+        {
+            return;
+        }
+
         if (__instance is not FlankingPower power)
         {
             return;
@@ -129,6 +135,11 @@ public static class FlankingTextOverridePatch
     [HarmonyPostfix]
     public static void Postfix(string key, ref string __result)
     {
+        if (!BalancerSettings.CardModsEnabled)
+        {
+            return;
+        }
+
         if (!TargetKeys.Contains(key))
         {
             return;

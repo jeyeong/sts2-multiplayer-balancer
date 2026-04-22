@@ -1,6 +1,7 @@
 using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Modding;
+using STS2MultiplayerBalancer.STS2MultiplayerBalancerCode.Config;
 
 namespace STS2MultiplayerBalancer.STS2MultiplayerBalancerCode;
 
@@ -16,8 +17,15 @@ public partial class MainFile : Node
 
     public static void Initialize()
     {
+        // Settings load before Harmony so the gameplay patches read the
+        // player's saved toggle state on their very first invocation rather
+        // than the in-code defaults.
+        BalancerSettings.Load();
+
         Harmony harmony = new(ModId);
 
         harmony.PatchAll();
+
+        Logger.Info($"[{ModId}] Loaded. Card mods: {BalancerSettings.CardModsEnabled}, Enemy doubling: {BalancerSettings.EnemyDoublingEnabled}, Team death: {BalancerSettings.TeamDeathEnabled}.");
     }
 }

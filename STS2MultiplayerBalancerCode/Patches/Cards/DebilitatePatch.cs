@@ -3,6 +3,7 @@ using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.ValueProps;
+using STS2MultiplayerBalancer.STS2MultiplayerBalancerCode.Config;
 
 namespace STS2MultiplayerBalancer.STS2MultiplayerBalancerCode.Patches.Cards;
 
@@ -43,6 +44,11 @@ public static class DebilitateVulnerableApplierOnlyPatch
         CardModel? cardSource,
         ref decimal __result)
     {
+        if (!BalancerSettings.CardModsEnabled)
+        {
+            return;
+        }
+
         if (__result == amount)
         {
             return;
@@ -81,6 +87,11 @@ public static class DebilitateWeakApplierOnlyPatch
         Creature? dealer,
         ref decimal __result)
     {
+        if (!BalancerSettings.CardModsEnabled)
+        {
+            return;
+        }
+
         if (dealer == null || dealer != __instance.Owner)
         {
             return;
